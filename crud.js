@@ -1,119 +1,49 @@
+const express = require("express");
 const client = require("./database");
 
-/*
-function listarTarefas(){
-    return client.query ("SELECT * FROM tarefas");
-}
+// Importamos as DUAS funções do arquivo tarefas.js
+const { listarTarefas, criarTarefa, concluirTarefa } = require("./tarefas/tarefas");
 
-function buscarTarefa(id){
-    return client.query ("SELECT * FROM tarefas WHERE id = $1",[id]);
-}
-*/
+const app = express();
 
-function criarTarefa(titulo, descricao){
-    return client.query ("INSERT INTO tarefas (titulo, descricao, concluida) VALUES ($1, $2, FALSE) RETURNING *",
-        [titulo, descricao]);
-}
-
+app.use(express.json());
 
 client.connect()
-    .then(() => {
-        console.log("Conectado ao PostgreSQL!");
-        //return listarTarefas();
-        //return buscarTarefa(1);
-        return criarTarefa("Estudar Node.js", "Aprender PostgreSQL");
-    })
+  .then(() => console.log("Conectado ao PostgreSQL com sucesso!"))
+  .catch((erro) => console.log("Erro ao conectar no banco:", erro));
+
+// Rota GET (que você já tinha testado)
+app.get("/tarefas", (req, res) => {
+  listarTarefas()
+    .then((resultado) => res.json(resultado.rows))
+    .catch((erro) => res.status(500).json({ erro: erro.message }));
+});
+
+// Rota POST (NOVA rota para cadastrar)
+app.post("/tarefas", (req, res) => {
+  const { titulo, descricao } = req.body;
+
+  criarTarefa(titulo, descricao)
+    .then((resultado) => res.status(201).json(resultado.rows[0]))
+    .catch((erro) => res.status(500).json({ erro: erro.message }));
+});
+
+app.patch("/tarefas/:id/concluir", (req, res) => {
+  // Pega o ID que veio na URL (ex: /tarefas/8/concluir)
+  const { id } = req.params;
+
+  concluirTarefa(id)
     .then((resultado) => {
-        console.log(resultado.rows[0]);
-        console.log("Tarefa criada com sucesso!")
+      // Se não encontrou nenhuma tarefa com esse ID no banco
+      if (resultado.rows.length === 0) {
+        return res.status(404).json({ erro: "Tarefa não encontrada." });
+      }
+      res.json(resultado.rows[0]);
     })
-    .catch((erro) => {
-        console.log("Erro ao conectar:", erro);
-    });
-/*
-const tarefa = [
-{
-    titulo: "Estudar PostgreSQL",
-    descricao: "Aprender SELECT",
-    concluida: false
-},
-{
-    titulo: "Estudar NODE.JS",
-    descricao: "Aprender ARRAY",
-    concluida: false
-},
-{
-    titulo: "Estudar REACT",
-    descricao: "Aprender WEB",
-    concluida: true
-}
-];
+    .catch((erro) => res.status(500).json({ erro: erro.message }));
+});
 
 
-
-function criarTarefa (tarefa){
-    tarefa.push({
-        titulo: "Estudar Python",
-        descricao:"Analise de Dados",
-        concluida: false})
-    }
-
-criarTarefa(tarefa);
-
-function listarTarefas(tarefa){
-    for (let i = 0; i < tarefa.length; i++){
-        console.log(tarefa[i].titulo);
-        console.log(tarefa[i].descricao);
-        console.log(tarefa[i].concluida);
-    }
-} 
-
-listarTarefas(tarefa);
-
-
-function buscarTarefa(tarefa, titulo){
-    const tarefaEncontrada = tarefa.find(function(achaTarefa){
-        return achaTarefa.titulo === titulo;        
-    })
-    return tarefaEncontrada;
-}
-
-const resultado = buscarTarefa(tarefa, "Estudar NODE.JS");
-console.log(resultado);
-
-
-
-function concluirTarefa (tarefa, titulo){
-    const tarefaEncontrada = tarefa.find(function(achaTarefa){
-        return achaTarefa.titulo === titulo;
-    })
-    
-    if (tarefaEncontrada){
-    tarefaEncontrada.concluida = true;
-    } else {
-        console.log("Tarefa não encontrada");
-    }
-
-}
-
-concluirTarefa (tarefa, "Estudar NODE.JS");
-console.log(tarefa);
-
-
-
-function excluirTarefa(tarefa, titulo){
-    const tarefaEncontrada = tarefa.findIndex(function(achaTarefa){
-        return achaTarefa.titulo === titulo;
-      
-   });
-   
-    if (tarefaEncontrada != -1){
-        tarefa.splice(tarefaEncontrada, 1);
-        console.log("Tarefa excluída com sucesso");
-    } else {
-        console.log("Tarefa não encontrada");
-    }
-}
-excluirTarefa (tarefa, "Estudar NODE.JS");
-console.log(tarefa);
-*/
+app.listen(3000, () => {
+  console.log("Servidor rodando em http://localhost:3000");
+});
