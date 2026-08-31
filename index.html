@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciador de Tarefas</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 20px; }
+    h1 { color: #1e293b; }
+    form { display: flex; gap: 10px; margin-bottom: 20px; }
+    input { padding: 8px; flex: 1; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 8px 16px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; margin-bottom: 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .concluida { text-decoration: line-through; color: #94a3b8; }
+    .btn-concluir { background-color: #10b981; padding: 4px 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>Minhas Tarefas</h1>
+
+  <!-- Formulário para Inserir -->
+  <form id="formTarefa">
+    <input type="text" id="titulo" placeholder="Título da tarefa..." required />
+    <input type="text" id="descricao" placeholder="Descrição..." />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <!-- Lista de Tarefas -->
+  <ul id="listaTarefas"></ul>
+
+  <script>
+    const API_URL = '/tarefas';
+
+    // 1. Função para carregar e exibir as tarefas
+    async function carregarTarefas() {
+      const res = await fetch(API_URL);
+      const tarefas = await res.json();
+      
+      const lista = document.getElementById('listaTarefas');
+      lista.innerHTML = '';
+
+      tarefas.forEach(t => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="${t.concluida ? 'concluida' : ''}">
+            <strong>${t.titulo}</strong> - ${t.descricao || ''}
+          </span>
+          ${!t.concluida ? `<button class="btn-concluir" onclick="concluir(${t.id})">Concluir</button>` : '✅'}
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    // 2. Evento para cadastrar nova tarefa via POST
+    document.getElementById('formTarefa').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById('titulo').value;
+      const descricao = document.getElementById('descricao').value;
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, descricao })
+      });
+
+      document.getElementById('titulo').value = '';
+      document.getElementById('descricao').value = '';
+      carregarTarefas();
+    });
+
+    // 3. Função para concluir tarefa via PATCH
+    async function concluir(id) {
+      await fetch(`${API_URL}/${id}/concluir`, { method: 'PATCH' });
+      carregarTarefas();
+    }
+
+    // Carrega ao abrir a página
+    carregarTarefas();
+  </script>
+</body>
+</html>

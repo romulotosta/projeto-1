@@ -1,5 +1,6 @@
 const express = require("express");
 const client = require("./database");
+const path = require("path")
 
 // Importamos as DUAS funções do arquivo tarefas.js
 const { listarTarefas, criarTarefa, concluirTarefa } = require("./tarefas/tarefas");
@@ -43,6 +44,9 @@ app.patch("/tarefas/:id/concluir", (req, res) => {
     .catch((erro) => res.status(500).json({ erro: erro.message }));
 });
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 app.listen(3000, () => {
   console.log("Servidor rodando em http://localhost:3000");
